@@ -19,11 +19,11 @@
 WIPName -
 
 """
-__name__ = "WIP"
+__name__ = "CorrDis"
 __version__ = "0.1"
 __date__ = "10/08/2025"  # MM/DD/YYY
 __author__ = "Denis Langevin and Antoine Moreau"
 
-from src.formulas_2D import *
-from src.core import *
-from src.noise_generation import *
+from CorrDis.formulas_2D import *
+from CorrDis.core import *
+from CorrDis.noise_generation import *

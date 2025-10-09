@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import j1
-from src.core import ft_pdf
+from CorrDis.core import ft_pdf
 
 
 def S_delta_direct_2D(Lcx, Lcy, Sdx, Sdy, n_corrx, n_corry, Nx, Ny=0, mode="x"):
