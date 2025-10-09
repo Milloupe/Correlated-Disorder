@@ -30,12 +30,10 @@ def S_delta_direct(Lc, Sd, n_corr, N):
     returns:
         (float) the standard deviation of the n_corr-th correlation term
     """
-    sigma = 2 * N  / (np.pi * Lc)
+    sigma = 2 * N / (np.pi * Lc)
     nmod = int(round(sigma))
 
-    A = np.array(
-        [np.exp(-4 * (2 * i / sigma) ** 2) for i in range(1, nmod + 1)]
-    )
+    A = np.array([np.exp(-4 * (2 * i / sigma) ** 2) for i in range(1, nmod + 1)])
     sin_phase = np.array(
         [np.sin(np.pi * n_corr * i / N) ** 2 for i in range(1, nmod + 1)]
     )
@@ -45,21 +43,32 @@ def S_delta_direct(Lc, Sd, n_corr, N):
 
 
 def S_delta_corrective(Lc, Sd, n_corr, N):
-    nmod = max(20 * Lc, 5)
+    """
+    This function computes the standard deviation of the n_corr-th correlation term between positions
+    It depends on the correlation length
+
+    Args:
+        Lc (float): Correlation length of the perturbation (normalized by the period)
+        Sd (float): Standard deviation of the perturbation (normalized by the period)
+        n_corr (int): which correlation halo term's standard deviation to compute
+        N (int): Number of positions
+
+    returns:
+        (float) the standard deviation of the n_corr-th correlation term
+    """
+    nmod = max(20 * Lc, 5) # Never get below 5 modes
     nmod = int(round(nmod))
 
-    A1 = np.array(
-        [np.exp(-2 / Lc ** 2 * k ** 2) for k in range(-nmod, nmod)]
-    )
+    A1 = np.array([np.exp(-2 / Lc**2 * k**2) for k in range(-nmod, nmod)])
     A2 = np.array(
         [
-            np.exp(-2 / Lc ** 2 * (n_corr ** 2 - 2 * n_corr * k + k ** 2))
+            np.exp(-2 / Lc**2 * (n_corr**2 - 2 * n_corr * k + k**2))
             for k in range(-nmod, nmod)
         ]
     )
     A3 = np.array(
         [
-            np.exp(-1 / Lc ** 2 * (n_corr ** 2 - 2 * n_corr * k + 2 * k ** 2))
+            np.exp(-1 / Lc**2 * (n_corr**2 - 2 * n_corr * k + 2 * k**2))
             for k in range(-nmod, nmod)
         ]
     )
@@ -100,7 +109,7 @@ def grating(Sd, list_k, pos_orders, N):
     """
     res = (np.sin(N * list_k * np.pi) / np.sin(list_k * np.pi)) ** 2
     res[pos_orders] = (
-        N ** 2
+        N**2
     )  # making sure the diffraction order is computed correctly (division by zero)
     return ft_pdf(Sd, list_k) ** 2 * res
 
@@ -122,7 +131,7 @@ def correlation_halo(S_delta, Lc, Sd, n_corr, list_k, N):
         (list): n_corr-th correlation halo contribution to the scattered intensity
     """
     std_Delta = S_delta(Lc, Sd, n_corr, N)
-    
+
     return (
         2
         * (N - n_corr)
@@ -131,9 +140,7 @@ def correlation_halo(S_delta, Lc, Sd, n_corr, list_k, N):
     )
 
 
-
-
-def diffraction_figure(pos, list_k, resolution, size=0.):
+def diffraction_figure(pos, list_k, resolution, size=0.0):
     """
     This function computes the diffraction figure along one direction of an array of points,
     by computing its Fourier Transform
@@ -150,24 +157,28 @@ def diffraction_figure(pos, list_k, resolution, size=0.):
         (list): scattered intensity along one direction
     """
 
-    B = np.zeros((1, resolution))
+    B = np.zeros(resolution)
 
     for k in range(0, len(pos)):
-        B = B + np.exp(2j * np.pi * pos[k] * list_k) # Hand computation of the FT of the points
+        B = B + np.exp(
+            2j * np.pi * pos[k] * list_k
+        )  # Hand computation of the FT of the points
 
-    if size :
+    if size:
         # A size for the emitters was given -> use Airy formula
         r = np.sqrt(list_k**2)
-        A = 2*np.pi * size**2 / 4 * j1(np.pi * size * r)/(np.pi * size * r)
-        F = ((np.abs(B*A) / len(pos))) ** 2
+        A = 2 * np.pi * size**2 / 4 * j1(np.pi * size * r) / (np.pi * size * r)
+        F = ((np.abs(B * A) / len(pos))) ** 2
         return F
-    
+
     F = ((np.abs(B) / len(pos))) ** 2
 
     return F
 
 
-def analytical_average_diff_fig(S_delta, Lc, Sd, tot_n_corr, list_k, resolution, pos_orders, N):
+def analytical_average_diff_fig(
+    S_delta, Lc, Sd, tot_n_corr, list_k, resolution, pos_orders, N, return_type="all"
+):
     """
     This function computes the scattered intensity statistical average (along one direction)
 
@@ -185,20 +196,21 @@ def analytical_average_diff_fig(S_delta, Lc, Sd, tot_n_corr, list_k, resolution,
         (list): analytical value fo the statistical average of the scattered intensity along one direction
     """
 
-
-    avg_diffuse_grating = diffuse_background(Sd, list_k, N)
+    avg_diffuse_background = diffuse_background(Sd, list_k, N)
     avg_grating = grating(Sd, list_k, pos_orders, N)
     avg_corr = np.zeros((tot_n_corr, resolution))
 
-
     for i in range(tot_n_corr):
-        avg_corr[i] += correlation_halo(S_delta, Lc, Sd, i+1, list_k, N)
+        avg_corr[i] += correlation_halo(S_delta, Lc, Sd, i + 1, list_k, N)
 
         # Normalization
-        avg_diffuse_grating = avg_diffuse_grating / N ** 2
-        avg_grating = avg_grating / N ** 2
-        avg_corr = avg_corr / N ** 2
+    avg_diffuse_background = avg_diffuse_background / N**2
+    avg_grating = avg_grating / N**2
+    avg_corr = avg_corr / N**2
 
-        tot = avg_diffuse_grating + avg_grating + np.sum(avg_corr, axis=0)
+    tot = avg_diffuse_background + avg_grating + np.sum(avg_corr, axis=0)
 
-    return avg_diffuse_grating, avg_grating, avg_corr, tot
+    if return_type == "all":
+        return avg_diffuse_background, avg_grating, avg_corr, tot
+    else:
+        return tot

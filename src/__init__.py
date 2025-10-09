@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://mit-license.org>.
 #
 """
-WIPName - 
+WIPName -
 
 """
 __name__ = "WIP"
@@ -24,3 +24,6 @@ __version__ = "0.1"
 __date__ = "10/08/2025"  # MM/DD/YYY
 __author__ = "Denis Langevin and Antoine Moreau"
 
+from src.formulas_2D import *
+from src.core import *
+from src.noise_generation import *
