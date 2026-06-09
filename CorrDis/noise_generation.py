@@ -144,6 +144,78 @@ def direct_2D(Lx, Ly, Sdx, Sdy, Nx, Ny=0):
 
     return np.array(coord)
 
+def direct_3D(Lx, Ly, Lz, Sdx, Sdy, Sdz, Nx, Ny=0):
+    """
+    This function generates a random gaussian perturbation to Nx * Ny periodic positions
+    in 3 dimensions (X, Y, Z).
+
+    Args:
+        Lx, Ly, Lz (float): Correlation length of the perturbation
+        Sdx, Sdy, Sdz (float): Standard deviation of the perturbation
+        Nx (int): Number of positions in X
+        Ny (int, optional): Number of positions in Y. Defaults to Nx.
+
+    returns:
+        coord (numpy.ndarray): array of N perturbations (triplets dx, dy, dz)
+    """
+    if not Ny:
+        Ny = Nx
+    coord = []
+
+    nmodx = int(round(4 * Nx / (2 * np.pi * Lx)))
+    nmody = int(round(4 * Ny / (2 * np.pi * Ly)))
+
+    Ax = np.array([[np.exp(-2 * (np.pi * Lx / Nx) ** 2 * (i**2 + j**2)) for i in range(nmodx)] for j in range(nmody)])
+    Ay = np.array([[np.exp(-2 * (np.pi * Ly / Ny) ** 2 * (i**2 + j**2)) for i in range(nmodx)] for j in range(nmody)])
+
+    Az = np.array([[np.exp(-2 * (np.pi * Lz / Nx) ** 2 * (i**2 + j**2)) for i in range(nmodx)] for j in range(nmody)])
+
+    phi = np.random.rand(nmody, nmodx) * 2 * np.pi
+    exp_phi = np.exp(1j * phi)
+    dx = np.zeros((Nx, Ny))
+    for j in range(1, Nx + 1):
+        exp_phasex = np.exp(2 * 1j * np.pi * np.arange(0, nmodx) * j / Nx)
+        for k in range(1, Ny + 1):
+            exp_phasey = np.exp(2 * 1j * np.pi * np.arange(0, nmody) * k / Ny)
+            exp_phase1, exp_phase2 = np.meshgrid(exp_phasex, exp_phasey)
+            produit = exp_phi * Ax * (exp_phase1 * exp_phase2)
+            produit[0, 0] = 0
+            dx[j - 1, k - 1] = np.real(np.sum(produit))
+
+    phi = np.random.rand(nmody, nmodx) * 2 * np.pi
+    exp_phi = np.exp(1j * phi)
+    dy = np.zeros((Nx, Ny))
+    for j in range(1, Nx + 1):
+        exp_phasex = np.exp(2 * 1j * np.pi * np.arange(0, nmodx) * j / Nx)
+        for k in range(1, Ny + 1):
+            exp_phasey = np.exp(2 * 1j * np.pi * np.arange(0, nmody) * k / Ny)
+            exp_phase1, exp_phase2 = np.meshgrid(exp_phasex, exp_phasey)
+            produit = exp_phi * Ay * (exp_phase1 * exp_phase2)
+            produit[0, 0] = 0
+            dy[j - 1, k - 1] = np.real(np.sum(produit))
+
+    phi = np.random.rand(nmody, nmodx) * 2 * np.pi
+    exp_phi = np.exp(1j * phi)
+    dz = np.zeros((Nx, Ny))
+    for j in range(1, Nx + 1):
+        exp_phasex = np.exp(2 * 1j * np.pi * np.arange(0, nmodx) * j / Nx)
+        for k in range(1, Ny + 1):
+            exp_phasey = np.exp(2 * 1j * np.pi * np.arange(0, nmody) * k / Ny)
+            exp_phase1, exp_phase2 = np.meshgrid(exp_phasex, exp_phasey)
+            produit = exp_phi * Az * (exp_phase1 * exp_phase2)
+            produit[0, 0] = 0
+            dz[j - 1, k - 1] = np.real(np.sum(produit))
+
+    dx = dx * np.sqrt((Nx * Ny) / np.sum(dx**2)) * Sdx
+    dy = dy * np.sqrt((Nx * Ny) / np.sum(dy**2)) * Sdy
+    dz = dz * np.sqrt((Nx * Ny) / np.sum(dz**2)) * Sdz
+
+    for i in range(Nx):
+        for j in range(Ny):
+            coord.append([dx[i, j], dy[i, j], dz[i, j]])
+
+    return np.array(coord)
+
 
 def corrective_2D(Lx, Ly, Sdx, Sdy, Nx, Ny=0):
     """
