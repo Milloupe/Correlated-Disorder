@@ -5,7 +5,7 @@ from CorrDis.core import ft_pdf
 
 def S_delta_direct_2D(Lcx, Lcy, Sdx, Sdy, n_corrx, n_corry, Nx, Ny=0, mode="x"):
     """
-    This function computes the standard deviation of the (n_corrx, nçcorry)-th correlation term between positions
+    This function computes the standard deviation of the (n_corrx, n_corry)-th correlation term between positions
     It depends on the correlation length
 
     Args:
@@ -94,13 +94,11 @@ def grating_2D(Sdx, Sdy, list_kx, list_ky, pos_ordersx, pos_ordersy, Nx, Ny=0):
     if not (Ny):
         Ny = Nx
 
-    res = (np.sin(Nx * list_kx * np.pi) / np.sin(list_kx * np.pi)) ** 2 * (
-        np.sin(Ny * list_ky * np.pi) / np.sin(list_ky * np.pi)
-    ) ** 2
-    res[pos_ordersy, pos_ordersx] = (
-        Nx**2 * Ny**2
-    )  # making sure the diffraction order is computed correctly (division by zero)
-    return ft_pdf(Sdx, list_kx) ** 2 * ft_pdf(Sdy, list_ky) ** 2 * res
+    resx = (np.sin(Nx * list_kx * np.pi) / np.sin(list_kx * np.pi)) ** 2
+    resy = (np.sin(Ny * list_ky * np.pi) / np.sin(list_ky * np.pi)) ** 2
+    resx[:, pos_ordersx] = Nx ** 2
+    resy[pos_ordersy, :] = Ny ** 2  # making sure the diffraction order is computed correctly (division by zero)
+    return ft_pdf(Sdx, list_kx) ** 2 * ft_pdf(Sdy, list_ky) ** 2 * resx * resy
 
 
 def correlation_halo_2D(
@@ -124,23 +122,33 @@ def correlation_halo_2D(
     if not (Ny):
         Ny = Nx
 
+
     std_Deltax = S_delta2D(Lcx, Lcy, Sdx, Sdy, n_corrx, n_corry, Nx, Ny, mode="x")
     std_Deltay = S_delta2D(Lcx, Lcy, Sdx, Sdy, n_corrx, n_corry, Nx, Ny, mode="y")
 
-    res = (
-        2
-        * (Nx - n_corrx)
-        * (Ny - n_corry)
-        * np.cos(n_corrx * list_kx * 2 * np.pi)
-        * np.cos(n_corry * list_ky * 2 * np.pi)
-    )
+    if (n_corrx > 0 and n_corry > 0):
+        res = (
+            4
+            * (Nx - n_corrx)
+            * (Ny - n_corry)
+            * np.cos(n_corrx * list_kx * 2 * np.pi)
+            * np.cos(n_corry * list_ky * 2 * np.pi)
+        )
+    else:
+        res = (
+            2
+            * (Nx - n_corrx)
+            * (Ny - n_corry)
+            * np.cos(n_corrx * list_kx * 2 * np.pi)
+            * np.cos(n_corry * list_ky * 2 * np.pi)
+        )
     return res * (
         ft_pdf(std_Deltax, list_kx) * ft_pdf(std_Deltay, list_ky)
         - ft_pdf(Sdx, list_kx) ** 2 * ft_pdf(Sdy, list_ky) ** 2
     )
 
 
-def diffraction_figure_2D(pos, list_kx, list_ky, resolutionx, resolutiony, size=0.1):
+def diffraction_figure_2D(pos, list_kx, list_ky, resolutionx, resolutiony, size=0.0):
     """
     This function computes the diffraction figure along two directions of an array of points,
     by computing its Fourier Transform
@@ -157,7 +165,7 @@ def diffraction_figure_2D(pos, list_kx, list_ky, resolutionx, resolutiony, size=
         (1D list): scattered intensity along two directions
     """
 
-    [X, Y] = np.meshgrid(list_kx, list_ky)
+    [X, Y] = (list_kx, list_ky)
 
     B = np.zeros((resolutiony, resolutionx), dtype=complex)
 
@@ -179,7 +187,7 @@ def diffraction_figure_2D(pos, list_kx, list_ky, resolutionx, resolutiony, size=
     return F
 
 
-def avg_fig(
+def avg_fig_2D(
     S_delta,
     Lcx,
     Lcy,
@@ -227,7 +235,7 @@ def avg_fig(
                 avg_corr[i, j] += 0
             else:
                 avg_corr[i, j] += correlation_halo_2D(
-                    S_delta, Lcx, Lcy, Sdx, Sdy, i + 1, j + 1, list_kx, list_ky, Nx, Ny
+                    S_delta, Lcx, Lcy, Sdx, Sdy, i, j, list_kx, list_ky, Nx, Ny
                 )
 
     # Normalization
