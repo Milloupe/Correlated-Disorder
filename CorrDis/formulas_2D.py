@@ -186,6 +186,87 @@ def diffraction_figure_2D(pos, list_kx, list_ky, resolutionx, resolutiony, size=
 
     return F
 
+def diffraction_figure_3D(pos, list_kx, list_ky, k, resolutionx, resolutiony):
+    """
+    This function computes the diffraction figure along two directions of an array of points,
+    by computing its Fourier Transform
+
+    Args:
+        S_delta (function): how to compute the correlation standard deviation
+        Lc (float): Correlation length of the perturbation (normalized by the period)
+        Sd (float): Standard deviation of the perturbation (normalized by the period)
+        n_corr (int): which correlation halo term to compute
+        list_kx (list): list of directions in which to compute the intensity
+        N (int): Number of positions
+
+    returns:
+        (1D list): scattered intensity along two directions
+    """
+
+    kX, kY = np.meshgrid(list_kx, list_ky)
+    kZ = np.sqrt(np.maximum(k**2 - kX**2 - kY**2, 0)) + k
+
+
+    B = np.zeros((resolutiony, resolutionx), dtype=complex)
+
+    for i in range(0, len(pos)):
+        x, y, z = pos[i]
+        B = B + np.exp(2j * np.pi * x * kX) * np.exp(
+            2j * np.pi * y * kY) * np.exp(2j * np.pi * z * kZ)  # Hand computation of the FT of the points
+
+    F = ((np.abs(B) / len(pos))) ** 2
+
+    return F
+
+def diffraction_figure_2D_opti(pos, list_kx, list_ky):
+    """
+    This function computes the diffraction figure in 2D for an array of points using a vectorized Fourier Transform.
+
+    Args:
+        pos (array-like): Array of 2D positions (x, y).
+        list_kx (list): List of kx values.
+        list_ky (list): List of ky values.
+
+    Returns:
+        ndarray: The squared absolute value of the Fourier transform, representing the intensity.
+    """
+    x = pos[:, 0]
+    y = pos[:, 1]
+
+    Vx = np.exp(2j * np.pi * x[:, None] * list_kx)
+    Vy = np.exp(2j * np.pi * y[:, None] * list_ky)
+
+    B = Vy.T @ Vx
+
+    F = (np.abs(B) / len(pos)) ** 2
+
+    return F
+
+def diffraction_figure_3D_opti(pos, list_kx, list_ky, k):
+    """
+    This function computes the diffraction figure in 3D for an array of points using a vectorized Fourier Transform.
+
+    Args:
+        pos (array-like): Array of 3D positions (x, y, z).
+        list_kx (list): List of kx values.
+        list_ky (list): List of ky values.
+        k (float): Wave number.
+
+    Returns:
+        ndarray: The squared absolute value of the Fourier transform, representing the intensity.
+    """
+    kX, kY = np.meshgrid(list_kx, list_ky)
+    kZ = np.sqrt(np.maximum(k**2 - kX**2 - kY**2, 0)) + k
+
+    K = np.stack((kX, kY, kZ), axis=-1)
+
+    phase = np.einsum('nj,ykj->nyk', pos, K)
+
+    B = np.sum(np.exp(2j * np.pi * phase), axis=0)
+
+    F = (np.abs(B) / len(pos)) ** 2
+    return F
+
 
 def avg_fig_2D(
     S_delta,
