@@ -56,7 +56,7 @@ def S_delta_corrective(Lc, Sd, n_corr, N):
     returns:
         (float) the standard deviation of the n_corr-th correlation term
     """
-    nmod = max(20 * Lc, 5) # Never get below 5 modes
+    nmod = max(20 * Lc, 5)  # Never get below 5 modes
     nmod = int(round(nmod))
 
     A1 = np.array([np.exp(-2 / Lc**2 * k**2) for k in range(-nmod, nmod)])
@@ -93,6 +93,24 @@ def diffuse_background(Sd, list_k, N):
     return N * (1 - ft_pdf(Sd, list_k) ** 2)
 
 
+def diffuse_background_z(Sdx, Sdz, list_kx, k, N):
+    """
+    This function computes the diffuse background contribution to the scattered intensity
+    It does not depend on the correlation length
+
+    Args:
+        Sds/z (float): Standard deviation of the perturbation (normalized by the period)
+        list_kx (list): list of directions in which to compute the intensity
+        k (float): total wavevector
+        N (int): Number of positions
+
+    returns:
+        N (1 - rho_eps(k)**2) (list): diffuse background
+    """
+    list_kz = np.sqrt(k**2 - list_kx**2 + 0j)
+    return N * (1 - ft_pdf(Sdx, list_kx) ** 2 * ft_pdf(Sdz, list_kz) ** 2)
+
+
 def grating(Sd, list_k, pos_orders, N):
     """
     This function computes the grating orders contribution to the scattered intensity
@@ -112,6 +130,30 @@ def grating(Sd, list_k, pos_orders, N):
         N**2
     )  # making sure the diffraction order is computed correctly (division by zero)
     return ft_pdf(Sd, list_k) ** 2 * res
+
+
+def grating_z(Sdx, Sdz, list_kx, k, pos_orders, N):
+    """
+    This function computes the grating orders contribution to the scattered intensity
+    It does not depend on the correlation length
+
+    Args:
+        Sdx/z (float): Standard deviation of the perturbation (normalized by the period)
+        list_kx (list): list of directions in which to compute the intensity
+        pos_orders (list): list of indices (in list_kx) corresponding to diffraction peak positions
+        k (float): total wavevector
+        N (int): Number of positions
+
+    returns:
+        rho_eps(k)**2 * (sin(N k) / sin(k)) ** 2 (list): grating orders
+    """
+
+    list_kz = np.sqrt(k**2 - list_kx**2 + 0j)
+    res = (np.sin(N * list_kx * np.pi) / np.sin(list_kx * np.pi)) ** 2
+    res[pos_orders] = (
+        N**2
+    )  # making sure the diffraction order is computed correctly (division by zero)
+    return ft_pdf(Sdz, list_kz) ** 2 * ft_pdf(Sdx, list_kx) ** 2 * res
 
 
 def correlation_halo(S_delta, Lc, Sd, n_corr, list_k, N):
@@ -137,6 +179,37 @@ def correlation_halo(S_delta, Lc, Sd, n_corr, list_k, N):
         * (N - n_corr)
         * np.cos(n_corr * list_k * 2 * np.pi)
         * (ft_pdf(std_Delta, list_k) - ft_pdf(Sd, list_k) ** 2)
+    )
+
+
+def correlation_halo_z(S_delta, Lcx, Lcz, Sdx, Sdz, n_corr, list_kx, k, N):
+    """
+    This function computes the n_corr-th correlation halo contribution to the scattered intensity
+    It depends on the correlation length
+
+    Args:
+        S_delta (function): how to compute the correlation standard deviation
+        Lc (float): Correlation length of the perturbation (normalized by the period)
+        Sd (float): Standard deviation of the perturbation (normalized by the period)
+        n_corr (int): which correlation halo term to compute
+        list_kx (list): list of directions in which to compute the intensity
+        N (int): Number of positions
+
+    returns:
+        (list): n_corr-th correlation halo contribution to the scattered intensity
+    """
+    std_Deltax = S_delta(Lcx, Sdx, n_corr, N)
+    std_Deltaz = S_delta(Lcz, Sdz, n_corr, N)
+
+    list_kz = np.real(np.sqrt(k**2 - list_kx**2 + 0j))
+    return (
+        2
+        * (N - n_corr)
+        * np.cos(n_corr * list_kx * 2 * np.pi)
+        * (
+            ft_pdf(std_Deltax, list_kx) * ft_pdf(std_Deltaz, list_kz)
+            - ft_pdf(Sdx, list_kx) ** 2 * ft_pdf(Sdz, list_kz) ** 2
+        )
     )
 
 
@@ -207,6 +280,60 @@ def analytical_average_diff_fig(
     avg_diffuse_background = avg_diffuse_background / N**2
     avg_grating = avg_grating / N**2
     avg_corr = avg_corr / N**2
+
+    tot = avg_diffuse_background + avg_grating + np.sum(avg_corr, axis=0)
+
+    if return_type == "all":
+        return avg_diffuse_background, avg_grating, avg_corr, tot
+    else:
+        return tot
+
+
+def analytical_average_diff_fig_z(
+    S_delta,
+    Lcx,
+    Lcz,
+    Sdx,
+    Sdz,
+    tot_n_corr,
+    list_kx,
+    k,
+    resolution,
+    pos_orders,
+    N,
+    return_type="all",
+):
+    """
+    This function computes the scattered intensity statistical average (along one direction)
+
+    Args:
+        S_delta (function): how to compute the correlation standard deviation
+        Lc (float): Correlation length of the perturbation (normalized by the period)
+        Sd (float): Standard deviation of the perturbation (normalized by the period)
+        tot_n_corr (int): total number of correlation halo term to compute
+        list_kx (list): list of directions in which to compute the intensity
+        resolution (int): number of points in list_kx
+        pos_orders (int): index of positions within list_kx of diffraction orders
+        N (int): Number of positions
+
+    returns:
+        (list): analytical value fo the statistical average of the scattered intensity along one direction
+    """
+    prop_kx = np.abs(list_kx) < k
+
+    avg_diffuse_background = diffuse_background_z(Sdx, Sdz, list_kx, k, N)
+    avg_grating = grating_z(Sdx, Sdz, list_kx, k, pos_orders, N)
+    avg_corr = np.zeros((tot_n_corr, resolution))
+
+    for i in range(tot_n_corr):
+        avg_corr[i] += correlation_halo_z(
+            S_delta, Lcx, Lcz, Sdx, Sdz, i + 1, list_kx, k, N
+        )
+
+        # Normalization
+    avg_diffuse_background = avg_diffuse_background * prop_kx / N**2
+    avg_grating = avg_grating * prop_kx / N**2
+    avg_corr = avg_corr * prop_kx / N**2
 
     tot = avg_diffuse_background + avg_grating + np.sum(avg_corr, axis=0)
 

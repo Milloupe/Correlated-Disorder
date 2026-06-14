@@ -8,24 +8,26 @@ def compute_diff_fig(noise_type, nb_avg, L, Sd, list_k, resolution, N):
     avg_fig = np.zeros(resolution)
     grating = np.linspace(1, N, N)
     for j in range(0, nb_avg):
+        print(j, "/", nb_avg)
         perturbation = noise_type(L, Sd, N)
         pos = grating + perturbation
 
         F = corr_dis.diffraction_figure(pos, list_k, resolution, size=0.0)
-        
+
         avg_fig += F
 
     avg_fig = avg_fig / nb_avg
 
     return avg_fig
 
-N = 100
-resolution = N * 20
+
+N = 1000
+resolution = N * 2
 nb_avg = 10
 orders = 1
 
-Sds = [0.1, 0.3, 0.4]
-Ls = [0.5, 1, 1.5]
+Sds = [4.0]
+Ls = [40]
 
 mode = "correk"
 
@@ -60,14 +62,13 @@ for i, Sd in enumerate(Sds):
 
         diff_fig = compute_diff_fig(noise_type, nb_avg, Lc, Sd, list_kx, resolution, N)
 
-        tot_n_corr = max(int(Lc*3), 1)
+        tot_n_corr = max(int(Lc * 3), 1)
 
-        stat_diff_fig  = corr_dis.analytical_average_diff_fig(S_delta, Lc, Sd, tot_n_corr, list_kx, resolution, pos_orders, N, return_type=0)
+        # stat_diff_fig  = corr_dis.analytical_average_diff_fig(S_delta, Lc, Sd, tot_n_corr, list_kx, resolution, pos_orders, N, return_type=0)
 
-        
         plt.subplot(len(Sds), len(Ls), iplot + 1)
-        plt.plot(list_kx, diff_fig, 'b', label=f"Random")
-        plt.plot(list_kx, stat_diff_fig, 'r', label=f"Average")
+        plt.plot(list_kx, diff_fig, "b", label=f"Random")
+        # plt.plot(list_kx, stat_diff_fig, 'r', label=f"Average")
 
         maxi_graph = 3 * np.max(diff_fig[: pos_orders[0] - 4])
         # plt.ylim([-0.000, maxi_graph])

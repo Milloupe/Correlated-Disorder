@@ -23,9 +23,7 @@ def direct(L, Sd, N):
 
     phi = np.random.rand(nmod) * 2 * np.pi
     z = np.zeros(N)
-    A = np.array(
-        [np.exp(-2 * (np.pi * L * i / (N)) ** 2) for i in range(1, nmod + 1)]
-    )
+    A = np.array([np.exp(-2 * (np.pi * L * i / (N)) ** 2) for i in range(1, nmod + 1)])
 
     exp_phi = np.exp(1j * phi)
 
@@ -121,7 +119,6 @@ def direct_2D(Lx, Ly, Sdx, Sdy, Nx, Ny=0):
             produit[0, 0] = 0  # removing n = m = 0
             dx[j - 1, k - 1] = np.real(np.sum(produit))
 
-
     phi = np.random.rand(nmody, nmodx) * 2 * np.pi
     exp_phi = np.exp(1j * phi)
 
@@ -140,9 +137,10 @@ def direct_2D(Lx, Ly, Sdx, Sdy, Nx, Ny=0):
     dy = dy * np.sqrt(Ny * Ny / np.sum(dy**2)) * Sdy
     for i in range(Nx):
         for j in range(Ny):
-            z[i*Ny + j] = ([dx[i, j], dy[i, j]])
+            z[i * Ny + j] = [dx[i, j], dy[i, j]]
 
     return np.array(z)
+
 
 def direct_3D(Lx, Ly, Lz, Sdx, Sdy, Sdz, Nx, Ny=0):
     """
@@ -165,10 +163,25 @@ def direct_3D(Lx, Ly, Lz, Sdx, Sdy, Sdz, Nx, Ny=0):
     nmodx = int(round(4 * Nx / (2 * np.pi * Lx)))
     nmody = int(round(4 * Ny / (2 * np.pi * Ly)))
 
-    Ax = np.array([[np.exp(-2 * (np.pi * Lx / Nx) ** 2 * (i**2 + j**2)) for i in range(nmodx)] for j in range(nmody)])
-    Ay = np.array([[np.exp(-2 * (np.pi * Ly / Ny) ** 2 * (i**2 + j**2)) for i in range(nmodx)] for j in range(nmody)])
+    Ax = np.array(
+        [
+            [np.exp(-2 * (np.pi * Lx / Nx) ** 2 * (i**2 + j**2)) for i in range(nmodx)]
+            for j in range(nmody)
+        ]
+    )
+    Ay = np.array(
+        [
+            [np.exp(-2 * (np.pi * Ly / Ny) ** 2 * (i**2 + j**2)) for i in range(nmodx)]
+            for j in range(nmody)
+        ]
+    )
 
-    Az = np.array([[np.exp(-2 * (np.pi * Lz / Nx) ** 2 * (i**2 + j**2)) for i in range(nmodx)] for j in range(nmody)])
+    Az = np.array(
+        [
+            [np.exp(-2 * (np.pi * Lz / Nx) ** 2 * (i**2 + j**2)) for i in range(nmodx)]
+            for j in range(nmody)
+        ]
+    )
 
     phi = np.random.rand(nmody, nmodx) * 2 * np.pi
     exp_phi = np.exp(1j * phi)
@@ -235,29 +248,39 @@ def corrective_2D(Lx, Ly, Sdx, Sdy, Nx, Ny=0):
     z = np.zeros((Nx * Ny, 2))
     x = np.array([[gauss(0, 1) for _ in range(Nx)] for y in range(Ny)])
     y = np.array([[gauss(0, 1) for _ in range(Nx)] for y in range(Ny)])
-    
+
     dx = np.zeros((Nx, Ny))
     dy = np.zeros((Nx, Ny))
 
-    
-    nb_neighbors_x = int(np.ceil(5*Lx))
-    nb_neighbors_y = int(np.ceil(5*Ly))
-    weightx = np.array([[np.exp(-(n_x**2+n_y**2)/(Lx)**2)
-                        for n_x in range(-nb_neighbors_x, nb_neighbors_x)]
-                        for n_y in range(-nb_neighbors_y, nb_neighbors_y)])
-    weighty = np.array([[np.exp(-(n_x**2+n_y**2)/(Ly)**2)
-                        for n_x in range(-nb_neighbors_x, nb_neighbors_x)]
-                        for n_y in range(-nb_neighbors_y, nb_neighbors_y)])
+    nb_neighbors_x = int(np.ceil(5 * Lx))
+    nb_neighbors_y = int(np.ceil(5 * Ly))
+    weightx = np.array(
+        [
+            [
+                np.exp(-(n_x**2 + n_y**2) / (Lx) ** 2)
+                for n_x in range(-nb_neighbors_x, nb_neighbors_x)
+            ]
+            for n_y in range(-nb_neighbors_y, nb_neighbors_y)
+        ]
+    )
+    weighty = np.array(
+        [
+            [
+                np.exp(-(n_x**2 + n_y**2) / (Ly) ** 2)
+                for n_x in range(-nb_neighbors_x, nb_neighbors_x)
+            ]
+            for n_y in range(-nb_neighbors_y, nb_neighbors_y)
+        ]
+    )
 
     dx = sig.fftconvolve(x, weightx, mode="same")
     dy = sig.fftconvolve(y, weighty, mode="same")
-    
 
     dx = dx * np.sqrt(Nx * Nx / np.sum(dx**2)) * Sdx
     dy = dy * np.sqrt(Ny * Ny / np.sum(dy**2)) * Sdy
 
     for i in range(Nx):
         for j in range(Ny):
-            z[i*Ny + j] = ([dx[i, j], dy[i, j]])
-        
+            z[i * Ny + j] = [dx[i, j], dy[i, j]]
+
     return z

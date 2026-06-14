@@ -96,8 +96,10 @@ def grating_2D(Sdx, Sdy, list_kx, list_ky, pos_ordersx, pos_ordersy, Nx, Ny=0):
 
     resx = (np.sin(Nx * list_kx * np.pi) / np.sin(list_kx * np.pi)) ** 2
     resy = (np.sin(Ny * list_ky * np.pi) / np.sin(list_ky * np.pi)) ** 2
-    resx[:, pos_ordersx] = Nx ** 2
-    resy[pos_ordersy, :] = Ny ** 2  # making sure the diffraction order is computed correctly (division by zero)
+    resx[:, pos_ordersx] = Nx**2
+    resy[pos_ordersy, :] = (
+        Ny**2
+    )  # making sure the diffraction order is computed correctly (division by zero)
     return ft_pdf(Sdx, list_kx) ** 2 * ft_pdf(Sdy, list_ky) ** 2 * resx * resy
 
 
@@ -122,11 +124,10 @@ def correlation_halo_2D(
     if not (Ny):
         Ny = Nx
 
-
     std_Deltax = S_delta2D(Lcx, Lcy, Sdx, Sdy, n_corrx, n_corry, Nx, Ny, mode="x")
     std_Deltay = S_delta2D(Lcx, Lcy, Sdx, Sdy, n_corrx, n_corry, Nx, Ny, mode="y")
 
-    if (n_corrx > 0 and n_corry > 0):
+    if n_corrx > 0 and n_corry > 0:
         res = (
             4
             * (Nx - n_corrx)
@@ -186,6 +187,7 @@ def diffraction_figure_2D(pos, list_kx, list_ky, resolutionx, resolutiony, size=
 
     return F
 
+
 def diffraction_figure_3D(pos, list_kx, list_ky, k, resolutionx, resolutiony):
     """
     This function computes the diffraction figure along two directions of an array of points,
@@ -206,17 +208,18 @@ def diffraction_figure_3D(pos, list_kx, list_ky, k, resolutionx, resolutiony):
     kX, kY = np.meshgrid(list_kx, list_ky)
     kZ = np.sqrt(np.maximum(k**2 - kX**2 - kY**2, 0)) + k
 
-
     B = np.zeros((resolutiony, resolutionx), dtype=complex)
 
     for i in range(0, len(pos)):
         x, y, z = pos[i]
-        B = B + np.exp(2j * np.pi * x * kX) * np.exp(
-            2j * np.pi * y * kY) * np.exp(2j * np.pi * z * kZ)  # Hand computation of the FT of the points
+        B = B + np.exp(2j * np.pi * x * kX) * np.exp(2j * np.pi * y * kY) * np.exp(
+            2j * np.pi * z * kZ
+        )  # Hand computation of the FT of the points
 
     F = ((np.abs(B) / len(pos))) ** 2
 
     return F
+
 
 def diffraction_figure_2D_opti(pos, list_kx, list_ky):
     """
@@ -242,6 +245,7 @@ def diffraction_figure_2D_opti(pos, list_kx, list_ky):
 
     return F
 
+
 def diffraction_figure_3D_opti(pos, list_kx, list_ky, k):
     """
     This function computes the diffraction figure in 3D for an array of points using a vectorized Fourier Transform.
@@ -260,7 +264,7 @@ def diffraction_figure_3D_opti(pos, list_kx, list_ky, k):
 
     K = np.stack((kX, kY, kZ), axis=-1)
 
-    phase = np.einsum('nj,ykj->nyk', pos, K)
+    phase = np.einsum("nj,ykj->nyk", pos, K)
 
     B = np.sum(np.exp(2j * np.pi * phase), axis=0)
 

@@ -2,6 +2,7 @@ import gdstk
 import CorrDis
 import numpy as np
 from CorrDis import noise_generation as noise
+
 lib = gdstk.Library(unit=1e-9)
 
 Sd = 0.45
@@ -17,8 +18,8 @@ coords = noise.corrective_2D(Lc, Lc, Sd, Sd, nb_res, nb_res)
 k = 0
 for i in range(nb_res):
     for j in range(nb_res):
-        x = (coords[k][0]+i)*average_distance
-        y = (coords[k][1]+j)*average_distance
+        x = (coords[k][0] + i) * average_distance
+        y = (coords[k][1] + j) * average_distance
         square = gdstk.regular_polygon((x, y), l_cube, 4)
         cell.add(square)
         k += 1
